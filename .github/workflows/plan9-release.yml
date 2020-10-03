@@ -1,4 +1,5 @@
 # See https://github.com/actions/upload-release-asset
+# and https://github.com/actions/upload-release-asset/issues/16#issuecomment-662186555
 
 on:
   push:
@@ -9,20 +10,12 @@ on:
 name: Upload Release Asset
 
 jobs:
-  build:
-    name: Upload Release Asset
+  create_release:
+    name: Create Release
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          repository: golang/go
-          ref: ${{ github.ref }}
-          path: 'go'
-      - name: Build project
-        run: |
-          cd go/src
-          GOOS=plan9 GOARCH=amd64 ./bootstrap.bash
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -33,13 +26,53 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+
+  build_release:
+    name: Build release
+    needs: create_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, 386, arm6, arm7]
+        include:
+          - arch: amd64
+            GOARCH: amd64
+          - arch: 386
+            GOARCH: 386
+          - arch: arm6
+            GOARCH: arm
+            GOARM: 6
+          - arch: arm7
+            GOARCH: arm
+            GOARM: 7
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          repository: golang/go
+          ref: ${{ github.ref }}
+          path: 'go'
+
+      - name: Build Go
+        env:
+          GOOS: plan9
+          GOARCH: ${{ matrix.GOARCH }}
+          GOARM: ${{ matrix.GOARM }}
+        run: |
+          cd go/src
+          ./bootstrap.bash
+
+      - name: Rename bootstrap tbz
+        if: matrix.arch != matrix.GOARCH
+        run: mv go-plan9-${{ matrix.GOARCH }}-bootstrap.tbz go-plan9-${{ matrix.arch }}-bootstrap.tbz
+
       - name: Upload Release Asset
-        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: go-plan9-amd64-bootstrap.tbz
-          asset_name: go-plan9-amd64-bootstrap.tbz
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./go-plan9-${{ matrix.arch }}-bootstrap.tbz
+          asset_name: go-plan9-${{ matrix.arch }}-bootstrap.tbz
           asset_content_type: application/x-bzip2
