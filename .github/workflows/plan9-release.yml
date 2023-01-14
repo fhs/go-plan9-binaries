@@ -45,6 +45,9 @@ jobs:
           - arch: arm7
             GOARCH: arm
             GOARM: 7
+          - arch: arm8
+            GOARCH: arm
+            GOARM: 8
     steps:
 
       - name: Checkout code
