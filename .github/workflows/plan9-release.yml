@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, 386, arm6, arm7, arm8]
+        arch: [amd64, 386, arm6, arm7]
         include:
           - arch: amd64
             GOARCH: amd64
@@ -45,9 +45,6 @@ jobs:
           - arch: arm7
             GOARCH: arm
             GOARM: 7
-          - arch: arm8
-            GOARCH: arm
-            GOARM: 8
     steps:
 
       - name: Checkout code
