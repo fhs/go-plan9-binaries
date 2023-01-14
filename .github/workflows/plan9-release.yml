@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, 386, arm6, arm7]
+        arch: [amd64, 386, arm6, arm7, arm8]
         include:
           - arch: amd64
             GOARCH: amd64
